@@ -1,0 +1,7 @@
+defaultLocation: us-east1
+dataformCoreVersion: 3.0.0
+vars:
+    projectGas     : gas-price
+    datasetBronze         : ds_gas_price_bronze
+    datasetSilver      : ds_gas_price_silver
+    datasetGold      : ds_gas_price_gold
