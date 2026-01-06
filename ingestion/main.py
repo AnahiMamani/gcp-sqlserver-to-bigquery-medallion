@@ -1,25 +1,25 @@
-import pyodbc 
-# Biblioteca que permite se conectar com bancos que utilizam padrão ODBC como o SQL Server
+from database import conectar_banco, buscar_dados
+from dotenv import load_dotenv
+import os
 
-dados_conexão = (
-    "Driver={ODBC Driver 17 for SQL Server};" # Motor que o python vai usar
-    "Server=maquina;" # The conputer name where the database is located
-    "Database=dbManga;" # Database name
-    "Trusted_Connection=yes;" # Tell SQl Server to use the windows user to authenticate
-) # String de conesão que possue os dados necessarios para ter uma conesão bem sucedida
+load_dotenv() #ler sobre
 
-
-try:
-    conexao = pyodbc.connect(dados_conexão) # Create the connection
-    print("Conexão bem sucedida")
+def pipeline_producao():
+    # Agora você pode alternar entre bancos facilmente!
+    # db_name = input("Insira o nome do banco: ") 
+    db_name = os.getenv("DATABASE")
     
-    # Cursor é um carteiro que leva os comandos sql para o banco e retorna com os dados
-    cursor = conexao.cursor() 
-    cursor.execute("SELECT * FROM mangaVendas")
+    print(f"Iniciando processo para o banco: {db_name}")
+    conn = conectar_banco(db_name)
     
-    # O execute prepara todos os dados no servidor. Ja o fetchone traz o primeiro dado 
-    row = cursor.fetchone() # or fetchall() 
-    print(row)
+    try:
+        dados = buscar_dados(conn, "SELECT TOP 10 * FROM producao_etanol_anidro_bep_2012_2018")
+        print(f"Processados {dados} registros.")
+    finally:
+        conn.close()
 
-except Exception as e:
-    print(f"Erro ao conectar: {e}")
+# Esse if significa que se eu rodar diretamente este arquivo, então ai o pipeline_producao()
+# ira ser executado, caso eu importe essa arquivo para outro arquivo o que esta dentro desse
+# if aqui embaixo, não sera executado....
+if __name__ == "__main__":
+    pipeline_producao()
