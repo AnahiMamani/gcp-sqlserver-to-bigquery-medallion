@@ -1,20 +1,18 @@
 from database import conectar_banco, buscar_dados
-from dotenv import load_dotenv
 import os
 
-load_dotenv() #ler sobre
-
 def pipeline_producao():
-    # Agora você pode alternar entre bancos facilmente!
-    # db_name = input("Insira o nome do banco: ") 
-    db_name = os.getenv("DATABASE")
+    os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = r"C:\Users\AnahiMamani\github-repo\sqlserver-to-bigquery-medallion\gas-price-482120-4fb583586af6.json"
+
+    # db_name = input("Insira o nome do banco: ")  
+    db_name = "PRODUCTION"
     
     print(f"Iniciando processo para o banco: {db_name}")
     conn = conectar_banco(db_name)
     
     try:
-        dados = buscar_dados(conn, "SELECT TOP 10 * FROM producao_etanol_anidro_bep_2012_2018")
-        print(f"Processados {dados} registros.")
+        dados = buscar_dados(conn, "SELECT * FROM producao_etanol_anidro_bep_2012_2018")
+        print(f"Processados {len(dados)} registros.")
     finally:
         conn.close()
 

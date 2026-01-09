@@ -1,4 +1,11 @@
-Ative o venv: .\venv\Scripts\Activate.ps1.
+Ativando o venv(ambiente preparado ja instlado):
 
-Rode seu script: python ingestion/main.py.
+```.\venv\Scripts\Activate.ps1```
 
+Script para rodas o main.py
+
+````python ingestion/main.py.````
+
+Atualizando o requirements.txt do python:
+
+````pip freeze > requirements.txt````
