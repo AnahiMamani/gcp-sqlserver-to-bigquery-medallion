@@ -1,34 +1,73 @@
-from google.cloud import secretmanager
-from google.cloud import bigquery
+from google.cloud import secretmanager, bigquery
 import config
 import os
 
-os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = r"C:\Users\AnahiMamani\github-repo\sqlserver-to-bigquery-medallion\gas-price-482120-4fb583586af6.json"
+# Configura a variável de ambiente para que as bibliotecas do Google 
+# encontrem o seu arquivo JSON de chave privada automaticamente.
+os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = config.GOOGLE_CREDENTIALS
 
-# Secret Manager
-def get_connection_string():
-    client = secretmanager.SecretManagerServiceClient()
-    name = f"projects/596283452642/secrets/sql-server-connection/versions/latest"
-    response = client.access_secret_version(request={"name":name})
-    payload = response.payload.data.decode("UTF-8")
-    return payload
+def obter_texto_conexao_secret_manager():
+    """
+    Busca a 'ConnectionString' (endereço, usuário e senha) guardada de forma 
+    segura no Secret Manager do Google, para não deixar senhas expostas no código.
+    """
+    cliente_secret = secretmanager.SecretManagerServiceClient()
+    caminho_secret = f"projects/596283452642/secrets/sql-server-connection/versions/latest"
+    
+    resposta = cliente_secret.access_secret_version(request={"name": caminho_secret})
+    # O segredo vem em formato binário (bytes), por isso usamos .decode("UTF-8") para virar texto.
+    return resposta.payload.data.decode("UTF-8")
 
-# BIg Query
 def get_connection_bigquery():
+    """Inicia o cliente oficial do BigQuery para enviar comandos SQL ou carregar dados."""
     return bigquery.Client(project=config.PROJECT_ID)
 
-def job(client, df, tab_destino,):
-    table_id = f"{config.PROJECT_ID}.{tab_destino}"
-    
-    job_config = bigquery.LoadJobConfig(
-        # 'WRITE_TRUNCATE' equivale ao if_exists='replace'
-        write_disposition="WRITE_TRUNCATE", 
-    )
+def baixar_tabela_dq_nuvem(cliente, tabela_destino):
+    """
+    Tenta baixar os dados que já estão no BigQuery. 
+    Se a tabela não existir (ex: primeira vez rodando), ele retorna 'None'.
+    """
+    query_busca = f"SELECT * FROM `{config.PROJECT_ID}.{tabela_destino}`"
+    try:
+        # Transforma o resultado da consulta SQL do BigQuery direto em um DataFrame do Pandas.
+        return cliente.query(query_busca).to_dataframe()
+    except Exception:
+        # Caso a tabela ainda não tenha sido criada, o erro é ignorado para o pipeline seguir.
+        return None 
 
-    print(f"Enviando {len(df)} registros para {table_id}...")
+def inserir_dados_no_bigquery(cliente, dataframe, tabela_destino):
+    """
+    Pega um DataFrame do Pandas e o envia para o BigQuery.
+    Usa o modo 'WRITE_APPEND', que significa: adicione ao final do que já existe.
+    """
+    if dataframe.empty: 
+        return
+        
+    id_tabela = f"{config.PROJECT_ID}.{tabela_destino}"
     
-    # O cliente oficial carrega o dataframe
-    job = client.load_table_from_dataframe(df, table_id, job_config=job_config)
+    # Configura o carregamento: se a tabela já existir, ele apenas acrescenta (Append)
+    job_config = bigquery.LoadJobConfig(write_disposition="WRITE_APPEND")
     
-    # Espera o processo terminar
-    return job.result() 
+    job = cliente.load_table_from_dataframe(dataframe, id_tabela, job_config=job_config) # Make an API request
+    job.result() # Wait for the job to complete
+
+def deletar_linhas_por_chave(cliente, tabela_destino, dataframe_deletar, lista_colunas_chave):
+    """
+    Executa comandos de DELETE cirúrgicos. 
+    Para cada linha no DataFrame, ele gera um 'DELETE WHERE coluna1=x AND coluna2=y'.
+    """
+    if dataframe_deletar.empty: 
+        return
+        
+    id_tabela = f"{config.PROJECT_ID}.{tabela_destino}"
+    
+    # Percorre linha por linha do que precisa ser removido
+    #for indice, linha in-- mas aqui o indice não ajuda em nada então _ pois :P
+    for _, linha in dataframe_deletar.iterrows():
+        # Cria a parte do filtro: `ANO` = '2012' AND `ESTADO` = 'SP' ...
+        condicoes_filtro = " AND ".join([f"`{col}` = '{linha[col]}'" for col in lista_colunas_chave])
+        
+        comando_sql = f"DELETE FROM `{id_tabela}` WHERE {condicoes_filtro}"
+        
+        # Envia o comando de deletar para o BigQuery
+        cliente.query(comando_sql).result()
