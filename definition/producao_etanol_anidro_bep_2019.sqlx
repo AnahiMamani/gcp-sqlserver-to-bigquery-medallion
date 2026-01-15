@@ -1,0 +1,39 @@
+config {
+  type: "table", // ou "view"
+  schema: "ds_gas_price_bronze", // nome do seu dataset destino
+  name: "teste_sql_dataformn" // nome que a tabela terá no BigQuery
+}
+
+SELECT
+  -- Gerando um ID único (Surrogate Key)S
+  generate_uuid() as id_producao,
+  
+  -- Aplicando Taxonomia de Texto
+  CAST(PRODUTO AS STRING) as tx_produto,
+  CAST(UNIDADE AS STRING) as tx_unidade,
+  CAST(REGIAO AS STRING) as tx_regiao,
+  CAST(ESTADO AS STRING) as tx_estado,
+  
+  -- Aplicando Taxonomia de Tempo
+  CAST(ANO AS INT64) as ano,
+  
+  -- Conversão de Valores (Tratando strings para Numeric)
+  -- Nota: Se houver vírgula como decimal na origem, use: SAFE_CAST(REPLACE(JAN, ',', '.') AS NUMERIC)
+  SAFE_CAST(JAN AS NUMERIC) as vl_jan,
+  SAFE_CAST(FEV AS NUMERIC) as vl_fev,
+  SAFE_CAST(MAR AS NUMERIC) as vl_mar,
+  SAFE_CAST(ABR AS NUMERIC) as vl_abr,
+  SAFE_CAST(MAI AS NUMERIC) as vl_mai,
+  SAFE_CAST(JUN AS NUMERIC) as vl_jun,
+  SAFE_CAST(JUL AS NUMERIC) as vl_jul,
+  SAFE_CAST(AGO AS NUMERIC) as vl_ago,
+  SAFE_CAST(SET AS NUMERIC) as vl_set,
+  SAFE_CAST(OUT AS NUMERIC) as vl_out,
+  SAFE_CAST(NOV AS NUMERIC) as vl_nov,
+  SAFE_CAST(DEZ AS NUMERIC) as vl_dez,
+  SAFE_CAST(TOTAL AS NUMERIC) as vl_total_anual,
+  
+  CURRENT_TIMESTAMP() as dt_ingestao
+
+FROM ${ref("producao_etanol_anidro_bep_2019")} 
+-- Aqui o Dataform entende que a origem é a tabela que você carregou via Python
