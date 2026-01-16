@@ -8,6 +8,6 @@ SELECT
   coluna1,
   coluna2
 FROM
-  `gas-price-482120. ds_gas_price_bronze .preco_dolar_mensal`
+  `gas-price-482120.ds_gas_price_bronze.preco_dolar_mensal`
 WHERE
   condicao = true
