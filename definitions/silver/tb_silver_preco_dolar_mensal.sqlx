@@ -1,0 +1,31 @@
+config {
+    type: "incremental",
+    description: "Dados de produção de etanol 2019 normalizados e incrementais",
+    schema: "ds_gas_price_silver",
+    tags: ["silver", "price"],
+    uniqueKey: ["dt_mes", "mes", "ano"],
+    columns: {
+        preco_id: "Número sequencial da linha gerado por ordenação",
+        dt_mes: "Tipo de combustível (Ex: ETANOL ANIDRO)"
+    }
+}
+
+SELECT
+    FARM_FINGERPRINT(Data) AS preco_id,
+    SAFE_CAST(Data AS STRING) AS dt_mes,
+    
+    EXTRACT(YEAR FROM PARSE_DATE('%b %Y', REPLACE(REPLACE(REPLACE(Data, 'Set', 'Sep'),'Out', 'Oct')), 'Abri')) AS ano,
+    EXTRACT(MONTH FROM PARSE_DATE('%b %Y', REPLACE(Data, 'Set', 'Sep'))) AS mes,
+
+    -- Added backticks to handle accented column names
+    SAFE_CAST(REPLACE(`Último`, ',', '.') AS NUMERIC) AS vl_preco_fechamento,
+    SAFE_CAST(REPLACE(Abertura, ',', '.') AS NUMERIC) AS vl_preco_abertura,
+    SAFE_CAST(REPLACE(`Máxima`, ',', '.') AS NUMERIC) AS mx_preco_usd,
+    SAFE_CAST(REPLACE(`Mínima`, ',', '.') AS NUMERIC) AS mn_preco_usd,
+    SAFE_CAST(REPLACE(REPLACE(Var, ',', '.'), '%', '') AS NUMERIC) AS pc_variacao_usd,
+
+    CURRENT_TIMESTAMP() AS dt_ingestao
+FROM
+    `${constants.PROJECT_ID}.${constants.DATASET_BRONZE}.tb_bronze_preco_dolar_mensal`
+
+${when(incremental(), `WHERE dt_ingestao > (SELECT MAX(dt_ingestao) FROM ${self()})` )}
