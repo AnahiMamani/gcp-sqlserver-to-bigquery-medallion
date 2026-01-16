@@ -1,7 +1,8 @@
 config {
-  type: "table", // ou "view"
-  schema: "ds_gas_price_bronze", // nome do seu dataset destino
-  name: "teste_sql_dataformn" // nome que a tabela terá no BigQuery
+  type: "table",
+  schema: "ds_gas_price_silver", // Destino é a Silver, não a Bronze
+  name: "stg_producao_etanol_2019",
+  description: "Dados de produção de etanol 2019 normalizados"
 }
 
 SELECT
@@ -27,13 +28,12 @@ SELECT
   SAFE_CAST(JUN AS NUMERIC) as vl_jun,
   SAFE_CAST(JUL AS NUMERIC) as vl_jul,
   SAFE_CAST(AGO AS NUMERIC) as vl_ago,
-  SAFE_CAST(SET AS NUMERIC) as vl_set,
-  SAFE_CAST(OUT AS NUMERIC) as vl_out,
+  SAFE_CAST(`SET` AS NUMERIC) as vl_set,
+  SAFE_CAST(`OUT` AS NUMERIC) as vl_out,
   SAFE_CAST(NOV AS NUMERIC) as vl_nov,
   SAFE_CAST(DEZ AS NUMERIC) as vl_dez,
   SAFE_CAST(TOTAL AS NUMERIC) as vl_total_anual,
   
   CURRENT_TIMESTAMP() as dt_ingestao
 
-FROM ${ref("producao_etanol_anidro_bep_2019")} 
--- Aqui o Dataform entende que a origem é a tabela que você carregou via Python
+FROM ${ref("producao_etanol_anidro_bep_2019")}
