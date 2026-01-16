@@ -3,7 +3,7 @@ config {
     description: "Dados de produção de etanol 2019 normalizados e incrementais",
     schema: "ds_gas_price_silver",
     tags: ["silver"],
-    uniqueKey: ["tx_produto", "tx_estado", "ano"],
+    uniqueKey: ["tx_regiao", "tx_estado", "ano"],
     columns: {
             producao_id: "Número sequencial da linha gerado por ordenação",
             tx_produto: "Tipo de combustível (Ex: ETANOL ANIDRO)",
@@ -29,8 +29,6 @@ config {
 }
 
 SELECT
-  -- Se você rodar de novo, ele gera um novo ID. 
-  -- O ideal é criar um ID fixo baseado nos dados:
   FARM_FINGERPRINT(CONCAT(PRODUTO, ESTADO, ANO)) AS producao_id,
 
   CAST(PRODUTO AS STRING) AS tx_produto,
@@ -51,27 +49,10 @@ SELECT
   SAFE_CAST(REPLACE(`OUT`,',','.') AS NUMERIC) AS vl_producao_out,
   SAFE_CAST(REPLACE(NOV,',','.') AS NUMERIC) AS vl_producao_nov,
   SAFE_CAST(REPLACE(DEZ,',','.') AS NUMERIC) AS vl_producao_dez,
-  SAFE_CAST(REPLACE(TOTAL,',','.') AS NUMERIC) AS vl_producao_total_anual,
-
-  (
-    COALESCE(SAFE_CAST(REPLACE(JAN,',','.') AS NUMERIC), 0) +
-    COALESCE(SAFE_CAST(REPLACE(FEV,',','.') AS NUMERIC), 0) +
-    COALESCE(SAFE_CAST(REPLACE(MAR,',','.') AS NUMERIC), 0) +
-    COALESCE(SAFE_CAST(REPLACE(ABR,',','.') AS NUMERIC), 0) +
-    COALESCE(SAFE_CAST(REPLACE(MAI,',','.') AS NUMERIC), 0) +
-    COALESCE(SAFE_CAST(REPLACE(JUN,',','.') AS NUMERIC), 0) +
-    COALESCE(SAFE_CAST(REPLACE(JUL,',','.') AS NUMERIC), 0) +
-    COALESCE(SAFE_CAST(REPLACE(AGO,',','.') AS NUMERIC), 0) +
-    COALESCE(SAFE_CAST(REPLACE(`SET`,',','.') AS NUMERIC), 0) +
-    COALESCE(SAFE_CAST(REPLACE(`OUT`,',','.') AS NUMERIC), 0) +
-    COALESCE(SAFE_CAST(REPLACE(NOV,',','.') AS NUMERIC), 0) +
-    COALESCE(SAFE_CAST(REPLACE(DEZ,',','.') AS NUMERIC), 0)
-  ) AS vl_producao_total_calculado --A conta de total feita manualmente (esperando confirmação)
+  SAFE_CAST(REPLACE(TOTAL,',','.') AS NUMERIC) AS vl_producao_total_anual
 
   CURRENT_TIMESTAMP() AS dt_ingestao --Adiciona a coluna de timestamp
 FROM
   `${constants.PROJECT_ID}.${constants.DATASET_BRONZE}.producao_etanol_anidro_bep_2019`
 
--- O segredo do incremental está aqui: https://docs.cloud.google.com/dataform/docs/create-tables?hl=pt-br#add-table-documentation
--- 
 ${when(incremental(), `WHERE dt_ingestao > (SELECT MAX(dt_ingestao) FROM ${self()})` )}
