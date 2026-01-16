@@ -1,13 +1,11 @@
 config {
   type: "table",
-  schema: "ds_gas_price_bronze", // Opcional: define um dataset específico
+  schema: "ds_gas_price_silver", // Opcional: define um dataset específico
   tags: ["producao", "diario"] // Opcional: adiciona tags para organização/execução
 }
 
 SELECT
-  coluna1,
-  coluna2
+  Var,
+  Abertura
 FROM
   `gas-price-482120.ds_gas_price_bronze.preco_dolar_mensal`
-WHERE
-  condicao = true

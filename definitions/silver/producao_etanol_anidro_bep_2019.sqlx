@@ -1,0 +1,77 @@
+config {
+    type: "incremental",
+    description: "Dados de produção de etanol 2019 normalizados e incrementais",
+    schema: "ds_gas_price_silver",
+    tags: ["silver"],
+    uniqueKey: ["tx_produto", "tx_estado", "ano"],
+    columns: {
+            producao_id: "Número sequencial da linha gerado por ordenação",
+            tx_produto: "Tipo de combustível (Ex: ETANOL ANIDRO)",
+            tx_unidade: "Unidade de medida (Ex: m³ beb - barris equivalentes de petróleo)",
+            tx_regiao: "Nome da região brasileira",
+            tx_estado: "Nome completo do estado brasileiro",
+            ano: "Ano de referência da produção",
+            vl_producao_jan: "Produção de etanol anidro em Janeiro",
+            vl_producao_fev: "Produção de etanol anidro em Fevereiro",
+            vl_producao_mar: "Produção de etanol anidro em Março",
+            vl_producao_abr: "Produção de etanol anidro em Abril",
+            vl_producao_mai: "Produção de etanol anidro em Maio",
+            vl_producao_jun: "Produção de etanol anidro em Junho",
+            vl_producao_jul: "Produção de etanol anidro em Julho",
+            vl_producao_ago: "Produção de etanol anidro em Agosto",
+            vl_producao_set: "Produção de etanol anidro em Setembro",
+            vl_producao_out: "Produção de etanol anidro em Outubro",
+            vl_producao_nov: "Produção de etanol naidro em Novembro",
+            vl_producao_dez: "Produção de etanol anidro em Dezembro",
+            vl_producao_total_anual: "Soma total anual de produção do estado",
+            dt_ingestao: "Data e hora em que o dado foi processado pelo pipeline"
+      }
+}
+
+SELECT
+  -- Se você rodar de novo, ele gera um novo ID. 
+  -- O ideal é criar um ID fixo baseado nos dados:
+  FARM_FINGERPRINT(CONCAT(PRODUTO, ESTADO, ANO)) AS producao_id,
+
+  CAST(PRODUTO AS STRING) AS tx_produto,
+  CAST(UNIDADE AS STRING) AS tx_unidade,
+  CAST(REGIAO AS STRING) AS tx_regiao,
+  CAST(ESTADO AS STRING) AS tx_estado,
+  CAST(ANO AS INT64) AS ano,
+
+  SAFE_CAST(REPLACE(JAN,',','.') AS NUMERIC) AS vl_producao_jan,
+  SAFE_CAST(REPLACE(FEV,',','.') AS NUMERIC) AS vl_producao_fev,
+  SAFE_CAST(REPLACE(MAR,',','.') AS NUMERIC) AS vl_producao_mar,
+  SAFE_CAST(REPLACE(ABR,',','.') AS NUMERIC) AS vl_producao_abr,
+  SAFE_CAST(REPLACE(MAI,',','.') AS NUMERIC) AS vl_producao_mai,
+  SAFE_CAST(REPLACE(JUN,',','.') AS NUMERIC) AS vl_producao_jun,
+  SAFE_CAST(REPLACE(JUL,',','.') AS NUMERIC) AS vl_producao_jul,
+  SAFE_CAST(REPLACE(AGO,',','.') AS NUMERIC) AS vl_producao_ago,
+  SAFE_CAST(REPLACE(`SET`,',','.') AS NUMERIC) AS vl_producao_set,
+  SAFE_CAST(REPLACE(`OUT`,',','.') AS NUMERIC) AS vl_producao_out,
+  SAFE_CAST(REPLACE(NOV,',','.') AS NUMERIC) AS vl_producao_nov,
+  SAFE_CAST(REPLACE(DEZ,',','.') AS NUMERIC) AS vl_producao_dez,
+  SAFE_CAST(REPLACE(TOTAL,',','.') AS NUMERIC) AS vl_producao_total_anual,
+
+  (
+    COALESCE(SAFE_CAST(REPLACE(JAN,',','.') AS NUMERIC), 0) +
+    COALESCE(SAFE_CAST(REPLACE(FEV,',','.') AS NUMERIC), 0) +
+    COALESCE(SAFE_CAST(REPLACE(MAR,',','.') AS NUMERIC), 0) +
+    COALESCE(SAFE_CAST(REPLACE(ABR,',','.') AS NUMERIC), 0) +
+    COALESCE(SAFE_CAST(REPLACE(MAI,',','.') AS NUMERIC), 0) +
+    COALESCE(SAFE_CAST(REPLACE(JUN,',','.') AS NUMERIC), 0) +
+    COALESCE(SAFE_CAST(REPLACE(JUL,',','.') AS NUMERIC), 0) +
+    COALESCE(SAFE_CAST(REPLACE(AGO,',','.') AS NUMERIC), 0) +
+    COALESCE(SAFE_CAST(REPLACE(`SET`,',','.') AS NUMERIC), 0) +
+    COALESCE(SAFE_CAST(REPLACE(`OUT`,',','.') AS NUMERIC), 0) +
+    COALESCE(SAFE_CAST(REPLACE(NOV,',','.') AS NUMERIC), 0) +
+    COALESCE(SAFE_CAST(REPLACE(DEZ,',','.') AS NUMERIC), 0)
+  ) AS vl_producao_total_calculado --A conta de total feita manualmente (esperando confirmação)
+
+  CURRENT_TIMESTAMP() AS dt_ingestao --Adiciona a coluna de timestamp
+FROM
+  `${constants.PROJECT_ID}.${constants.DATASET_BRONZE}.producao_etanol_anidro_bep_2019`
+
+-- O segredo do incremental está aqui: https://docs.cloud.google.com/dataform/docs/create-tables?hl=pt-br#add-table-documentation
+-- 
+${when(incremental(), `WHERE dt_ingestao > (SELECT MAX(dt_ingestao) FROM ${self()})` )}
