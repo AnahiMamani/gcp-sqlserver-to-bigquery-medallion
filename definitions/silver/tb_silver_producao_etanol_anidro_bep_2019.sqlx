@@ -1,9 +1,9 @@
 config {
     type: "incremental",
-    name: "tb_silver_producao_etanol_anidro_bep_2012_2018",
+    name: "tb_silver_producao_etanol_anidro_bep_2019",
     description: "Dados de produção de etanol 2019 normalizados e incrementais",
     schema: "ds_gas_price_silver",
-    tags: ["silver", "producao"],
+    tags: ["silver", "producao", "2019"],
     uniqueKey: ["tx_regiao", "tx_estado", "ano"],
     columns: {
             producao_id: "Número sequencial da linha gerado por ordenação",
@@ -31,9 +31,9 @@ config {
 
 SELECT
   -- HASH FUNCTION recebe um valor string e o converte a um hash usando a função Fingerprint64 do OS FarmHash
-  FARM_FINGERPRINT(CONCAT(REGIAO, ESTADO, ANO)) AS producao_id,
+  FARM_FINGERPRINT(CONCAT(REGIAO, ESTADO, ANO)) AS producao_id,-- Ja deixa como INT64 
   -- SAFE_CAST - Se não conseguir converter ele deixa null
-  SAFE_CAST(PRODUTO AS STRING) AS tx_produto, 
+  SAFE_CAST(PRODUTO AS STRING) AS tx_produto
   SAFE_CAST(UNIDADE AS STRING) AS tx_unidade, 
   CAST(REGIAO AS STRING) AS tx_regiao,
   CAST(ESTADO AS STRING) AS tx_estado,
@@ -55,7 +55,7 @@ SELECT
 
   CURRENT_TIMESTAMP() AS dt_ingestao --Adiciona a coluna de timestamp
 FROM
-  `${constants.PROJECT_ID}.${constants.DATASET_BRONZE}.tb_bronze_producao_etanol_anidro_bep_2012_2018`
+  `${constants.PROJECT_ID}.${constants.DATASET_BRONZE}.tb_bronze_producao_etanol_anidro_bep_2019`
 
 -- Condição incremental, se não for a primeira vez que o sqlx rodar, entao ele add esse where assim incrementando apenas o novo
 ${when(incremental(), `WHERE dt_ingestao > (SELECT MAX(dt_ingestao) FROM ${self()})` )}
