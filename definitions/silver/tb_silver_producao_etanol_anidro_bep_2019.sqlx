@@ -1,40 +1,49 @@
 config {
-    type: "incremental",
-    name: "tb_silver_producao_etanol_anidro_bep_2019",
-    description: "Dados de produção de etanol 2019 normalizados e incrementais",
-    schema: "ds_gas_price_silver",
-    tags: ["silver", "producao", "2019"],
-    uniqueKey: ["tx_regiao", "tx_estado", "ano"],
-    columns: {
-            producao_id: "Número sequencial da linha gerado por ordenação",
-            tx_produto: "Tipo de combustível (Ex: ETANOL ANIDRO)",
-            tx_unidade: "Unidade de medida (Ex: m³ beb - barris equivalentes de petróleo)",
-            tx_regiao: "Nome da região brasileira",
-            tx_estado: "Nome completo do estado brasileiro",
-            ano: "Ano de referência da produção",
-            vl_producao_jan: "Produção de etanol anidro em Janeiro",
-            vl_producao_fev: "Produção de etanol anidro em Fevereiro",
-            vl_producao_mar: "Produção de etanol anidro em Março",
-            vl_producao_abr: "Produção de etanol anidro em Abril",
-            vl_producao_mai: "Produção de etanol anidro em Maio",
-            vl_producao_jun: "Produção de etanol anidro em Junho",
-            vl_producao_jul: "Produção de etanol anidro em Julho",
-            vl_producao_ago: "Produção de etanol anidro em Agosto",
-            vl_producao_set: "Produção de etanol anidro em Setembro",
-            vl_producao_out: "Produção de etanol anidro em Outubro",
-            vl_producao_nov: "Produção de etanol naidro em Novembro",
-            vl_producao_dez: "Produção de etanol anidro em Dezembro",
-            vl_producao_total_anual: "Soma total anual de produção do estado",
-            dt_ingestao: "Data e hora em que o dado foi processado pelo pipeline"
-      }
+  type: "incremental",
+  name: "tb_silver_producao_etanol_anidro_bep_2019",
+  description: "Dados de produção de etanol 2019 normalizados e incrementais",
+  schema: "ds_gas_price_silver",
+  tags: ["silver", "producao"],
+  uniqueKey: ["tx_regiao", "tx_estado", "ano"],
+  columns: {
+    producao_id: "Número sequencial da linha gerado por ordenação",
+    tx_produto: "Tipo de combustível (Ex: ETANOL ANIDRO)",
+    tx_unidade: "Unidade de medida (Ex: m³ beb - barris equivalentes de petróleo)",
+    tx_regiao: "Nome da região brasileira",
+    tx_estado: "Nome completo do estado brasileiro",
+    ano: "Ano de referência da produção",
+    vl_producao_jan: "Produção de etanol anidro em Janeiro",
+    vl_producao_fev: "Produção de etanol anidro em Fevereiro",
+    vl_producao_mar: "Produção de etanol anidro em Março",
+    vl_producao_abr: "Produção de etanol anidro em Abril",
+    vl_producao_mai: "Produção de etanol anidro em Maio",
+    vl_producao_jun: "Produção de etanol anidro em Junho",
+    vl_producao_jul: "Produção de etanol anidro em Julho",
+    vl_producao_ago: "Produção de etanol anidro em Agosto",
+    vl_producao_set: "Produção de etanol anidro em Setembro",
+    vl_producao_out: "Produção de etanol anidro em Outubro",
+    vl_producao_nov: "Produção de etanol naidro em Novembro",
+    vl_producao_dez: "Produção de etanol anidro em Dezembro",
+    vl_producao_total_anual: "Soma total anual de produção do estado",
+    dt_ingestao: "Data e hora em que o dado foi processado pelo pipeline"
+  }
+}
+
+pre_operations {
+  ${when(incremental(), 
+    `DELETE FROM ${self()} 
+     WHERE producao_id NOT IN (
+       SELECT FARM_FINGERPRINT(CONCAT(REGIAO, ESTADO, ANO)) 
+       FROM \`${constants.PROJECT_ID}.${constants.DATASET_BRONZE}.tb_bronze_producao_etanol_anidro_bep_2019\`
+     )`
+  )}
 }
 
 SELECT
-  -- HASH FUNCTION recebe um valor string e o converte a um hash usando a função Fingerprint64 do OS FarmHash
-  FARM_FINGERPRINT(CONCAT(REGIAO, ESTADO, ANO)) AS producao_id,-- Ja deixa como INT64 
-  -- SAFE_CAST - Se não conseguir converter ele deixa null
-  SAFE_CAST(PRODUTO AS STRING) AS tx_produto
-  SAFE_CAST(UNIDADE AS STRING) AS tx_unidade, 
+  FARM_FINGERPRINT(CONCAT(REGIAO, ESTADO, ANO)) AS producao_id,
+  SAFE_CAST(PRODUTO AS STRING) AS tx_produto,
+  SAFE_CAST(UNIDADE AS STRING) AS tx_unidade,
+  -- Conjunto de uniqueKey:
   CAST(REGIAO AS STRING) AS tx_regiao,
   CAST(ESTADO AS STRING) AS tx_estado,
   CAST(ANO AS INT64) AS ano,
@@ -52,10 +61,8 @@ SELECT
   SAFE_CAST(REPLACE(NOV,',','.') AS NUMERIC) AS vl_producao_nov,
   SAFE_CAST(REPLACE(DEZ,',','.') AS NUMERIC) AS vl_producao_dez,
   SAFE_CAST(REPLACE(TOTAL,',','.') AS NUMERIC) AS vl_producao_total_anual,
-
-  CURRENT_TIMESTAMP() AS dt_ingestao --Adiciona a coluna de timestamp
+  ingestion_timestamp AS dt_ingestao
 FROM
   `${constants.PROJECT_ID}.${constants.DATASET_BRONZE}.tb_bronze_producao_etanol_anidro_bep_2019`
-
--- Condição incremental, se não for a primeira vez que o sqlx rodar, entao ele add esse where assim incrementando apenas o novo
-${when(incremental(), `WHERE dt_ingestao > (SELECT MAX(dt_ingestao) FROM ${self()})` )}
+  -- Condição incremental, se não for a primeira vez que o sqlx rodar, entao ele add esse where assim incrementando apenas o novo
+  ${when(incremental(), `WHERE ingestion_timestamp > (SELECT MAX(dt_ingestao) FROM ${self()})`)}
