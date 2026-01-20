@@ -1,0 +1,65 @@
+config {
+    type: "incremental",
+    name: "tb_silver_preco_petroleo_mensal",
+    schema: "ds_gas_price_silver",
+    tags: ["silver", "preco"],
+    uniqueKey: ["preco_id"],
+    columns: {
+        preco_id: "Identificador único da linha gerado através do hash (FARM_FINGERPRINT) da data original.",
+        dt_mes: "Data de referência do registro no formato original (string).",
+        ano: "Ano extraído e tratado da coluna de data.",
+        mes: "Número do mês extraído da coluna de data (1 a 12).",
+        vl_preco_fechamento_petroleo: "Valor de fechamento do petróleo no período informado.",
+        vl_preco_abertura_petroleo: "Valor de abertura do petróleo no período informado.",
+        mx_preco_petroleo: "Valor máximo (garoa) atingido pelo petróleo no período.",
+        mn_preco_petroleo: "Valor mínimo atingido pelo petróleo no período.",
+        vl_volume_petroleo: "Volume de transações convertido para valor numérico real (ajustado por K para milhar e M para milhão).",
+        dt_ingestao: "Data e hora em que o dado foi inserido no sistema"
+    }
+}
+
+-- CTE (Common Table Expression) essa estrutura cria uma tabela temporaria que existe antes do verdadeiro select.
+WITH base_limpa AS (
+  SELECT
+    *,
+    REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(Data, 
+      'Dez', 'Dec'), 
+      'Out', 'Oct'), 
+      'Set', 'Sep'), 
+      'Ago', 'Aug'), 
+      'Mai', 'May'), 
+      'Abr', 'Apr'),
+      'Fev', 'Feb') AS data_en,
+    REPLACE(REPLACE(REPLACE(
+    Vol, 'K',''),
+    'M', '')
+    ,',','.')
+     AS vl_volume_limpo,
+    CONTAINS_SUBSTR(Vol, 'K') AS tem_k,
+    CONTAINS_SUBSTR(Vol, 'M') AS tem_m
+  FROM
+    `${constants.PROJECT_ID}.${constants.DATASET_BRONZE}.tb_bronze_preco_petroleo_mensal.`
+)
+
+SELECT
+    FARM_FINGERPRINT(Data) AS preco_id,
+    Data AS dt_mes,
+    
+    EXTRACT(YEAR FROM PARSE_DATE('%b %Y', data_en)) + 2000 AS ano,
+    EXTRACT(MONTH FROM PARSE_DATE('%b %Y', data_en)) AS mes,
+
+    SAFE_CAST(REPLACE(`Último`, ',', '.') AS NUMERIC) AS vl_preco_fechamento_petroleo,
+    SAFE_CAST(REPLACE(Abertura, ',', '.') AS NUMERIC) AS vl_preco_abertura_petroleo,
+    SAFE_CAST(REPLACE(`Máxima`, ',', '.') AS NUMERIC) AS mx_preco_petroleo,
+    SAFE_CAST(REPLACE(`Mínima`, ',', '.') AS NUMERIC) AS mn_preco_petroleo,
+    CASE
+        WHEN tem_k THEN SAFE_CAST(vl_volume_limpo AS NUMERIC)*1000
+        WHEN tem_m THEN SAFE_CAST(vl_volume_limpo AS NUMERIC)*1000000 
+    END AS vl_volume_petroleo,
+    ingestion_timestamp AS dt_ingestao
+FROM
+    base_limpa
+
+${when(incremental(), 
+    `WHERE ingestion_timestamp > (SELECT MAX(dt_ingestao) FROM ${self()})`
+)}

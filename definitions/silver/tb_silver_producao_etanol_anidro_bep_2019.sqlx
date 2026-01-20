@@ -1,42 +1,32 @@
 config {
-  type: "incremental",
-  name: "tb_silver_producao_etanol_anidro_bep_2019",
-  description: "Dados de produção de etanol 2019 normalizados e incrementais",
-  schema: "ds_gas_price_silver",
-  tags: ["silver", "producao"],
-  uniqueKey: ["tx_regiao", "tx_estado", "ano"],
-  columns: {
-    producao_id: "Número sequencial da linha gerado por ordenação",
-    tx_produto: "Tipo de combustível (Ex: ETANOL ANIDRO)",
-    tx_unidade: "Unidade de medida (Ex: m³ beb - barris equivalentes de petróleo)",
-    tx_regiao: "Nome da região brasileira",
-    tx_estado: "Nome completo do estado brasileiro",
-    ano: "Ano de referência da produção",
-    vl_producao_jan: "Produção de etanol anidro em Janeiro",
-    vl_producao_fev: "Produção de etanol anidro em Fevereiro",
-    vl_producao_mar: "Produção de etanol anidro em Março",
-    vl_producao_abr: "Produção de etanol anidro em Abril",
-    vl_producao_mai: "Produção de etanol anidro em Maio",
-    vl_producao_jun: "Produção de etanol anidro em Junho",
-    vl_producao_jul: "Produção de etanol anidro em Julho",
-    vl_producao_ago: "Produção de etanol anidro em Agosto",
-    vl_producao_set: "Produção de etanol anidro em Setembro",
-    vl_producao_out: "Produção de etanol anidro em Outubro",
-    vl_producao_nov: "Produção de etanol naidro em Novembro",
-    vl_producao_dez: "Produção de etanol anidro em Dezembro",
-    vl_producao_total_anual: "Soma total anual de produção do estado",
-    dt_ingestao: "Data e hora em que o dado foi processado pelo pipeline"
-  }
-}
-
-pre_operations {
-  ${when(incremental(), 
-    `DELETE FROM ${self()} 
-     WHERE producao_id NOT IN (
-       SELECT FARM_FINGERPRINT(CONCAT(REGIAO, ESTADO, ANO)) 
-       FROM \`${constants.PROJECT_ID}.${constants.DATASET_BRONZE}.tb_bronze_producao_etanol_anidro_bep_2019\`
-     )`
-  )}
+    type: "incremental",
+    name: "tb_silver_producao_etanol_anidro_bep_2019",
+    description: "Dados de produção de etanol 2019 normalizados e incrementais",
+    schema: "ds_gas_price_silver",
+    tags: ["silver", "producao"],
+    uniqueKey: ["producao_id"],
+    columns: {
+        producao_id: "Número sequencial da linha gerado por ordenação",
+        tx_produto: "Tipo de combustível (Ex: ETANOL ANIDRO)",
+        tx_unidade: "Unidade de medida (Ex: m³ beb - barris equivalentes de petróleo)",
+        tx_regiao: "Nome da região brasileira",
+        tx_estado: "Nome completo do estado brasileiro",
+        ano: "Ano de referência da produção",
+        vl_producao_jan: "Produção de etanol anidro em Janeiro",
+        vl_producao_fev: "Produção de etanol anidro em Fevereiro",
+        vl_producao_mar: "Produção de etanol anidro em Março",
+        vl_producao_abr: "Produção de etanol anidro em Abril",
+        vl_producao_mai: "Produção de etanol anidro em Maio",
+        vl_producao_jun: "Produção de etanol anidro em Junho",
+        vl_producao_jul: "Produção de etanol anidro em Julho",
+        vl_producao_ago: "Produção de etanol anidro em Agosto",
+        vl_producao_set: "Produção de etanol anidro em Setembro",
+        vl_producao_out: "Produção de etanol anidro em Outubro",
+        vl_producao_nov: "Produção de etanol naidro em Novembro",
+        vl_producao_dez: "Produção de etanol anidro em Dezembro",
+        vl_producao_total_anual: "Soma total anual de produção do estado",
+        dt_ingestao: "Data e hora em que o dado foi inserido no sistema"
+    }
 }
 
 SELECT
