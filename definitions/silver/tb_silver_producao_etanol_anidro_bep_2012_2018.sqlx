@@ -25,7 +25,7 @@ config {
         vl_producao_nov: "Produção de etanol naidro em Novembro",
         vl_producao_dez: "Produção de etanol anidro em Dezembro",
         vl_producao_total_anual: "Soma total anual de produção do estado",
-        dt_ingestao: "Data e hora em que o dado foi processado pelo pipeline"
+        dt_ingestao: "Data e hora em que o dado foi inserido no sistema"
     }
 }
 
@@ -56,13 +56,3 @@ FROM
   `${constants.PROJECT_ID}.${constants.DATASET_BRONZE}.tb_bronze_producao_etanol_anidro_bep_2012_2018`
   -- Condição incremental, se não for a primeira vez que o sqlx rodar, entao ele add esse where assim incrementando apenas o novo
   ${when(incremental(), `WHERE ingestion_timestamp > (SELECT MAX(dt_ingestao) FROM ${self()})`)}
-
-pre_operations {
-  ${when(incremental(), 
-    `DELETE FROM ${self()} 
-     WHERE producao_id NOT IN (
-       SELECT FARM_FINGERPRINT(CONCAT(REGIAO, ESTADO, ANO)) 
-       FROM \`${constants.PROJECT_ID}.${constants.DATASET_BRONZE}.tb_bronze_producao_etanol_anidro_bep_2019\`
-     )`
-  )}
-}
