@@ -3,9 +3,8 @@ config {
     name: "tb_silver_preco_gasolina_mensal_2013_2019",
     schema: "ds_gas_price_silver",
     tags: ["silver", "preco", "gasolina"],
-    uniqueKey: ["preco_id"],
+    uniqueKey: ["dt_mes","tx_produto", "tx_regiao"],
     columns: {
-        preco_id: "Chave primária (Hash) gerada a partir da concatenação de Data, Produto e Região para garantir unicidade.",
         dt_mes: "Data representando o ano e o primeiro dia do mês de referência.",
         ano: "Ano extraído da data de referência (formato YYYY).",
         mes: "Número do mês extraído da data de referência (1-12).",
@@ -29,9 +28,6 @@ config {
 }
 
 SELECT
-  -- Gerar ID (Data + Produto + Região)
-  FARM_FINGERPRINT(CONCAT(column2, column3, column4)) AS preco_id,
-  
   DATE(SAFE_CAST(column2 AS TIMESTAMP)) AS dt_mes,
   EXTRACT(YEAR FROM DATE(SAFE_CAST(column2 AS TIMESTAMP))) AS ano,
   EXTRACT(MONTH FROM DATE(SAFE_CAST(column2 AS TIMESTAMP))) AS mes,

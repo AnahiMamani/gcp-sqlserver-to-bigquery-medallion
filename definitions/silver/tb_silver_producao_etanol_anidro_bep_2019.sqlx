@@ -4,9 +4,8 @@ config {
     description: "Dados de produção de etanol 2019 normalizados e incrementais",
     schema: "ds_gas_price_silver",
     tags: ["silver", "producao"],
-    uniqueKey: ["producao_id"],
+    uniqueKey: ["tx_regiao", "tx_estado", "ano"],
     columns: {
-        producao_id: "Número sequencial da linha gerado por ordenação",
         tx_produto: "Tipo de combustível (Ex: ETANOL ANIDRO)",
         tx_unidade: "Unidade de medida (Ex: m³ beb - barris equivalentes de petróleo)",
         tx_regiao: "Nome da região brasileira",
@@ -30,7 +29,6 @@ config {
 }
 
 SELECT
-  FARM_FINGERPRINT(CONCAT(REGIAO, ESTADO, ANO)) AS producao_id,
   SAFE_CAST(PRODUTO AS STRING) AS tx_produto,
   SAFE_CAST(UNIDADE AS STRING) AS tx_unidade,
   -- Conjunto de uniqueKey:

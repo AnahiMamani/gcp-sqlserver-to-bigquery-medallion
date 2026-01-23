@@ -4,7 +4,7 @@ config {
     description: "Dados de produção de etanol 2012 a 2018 normalizados e incrementais",
     schema: "ds_gas_price_silver",
     tags: ["silver", "producao"],
-    uniqueKey: ["producao_id"],
+    uniqueKey: ["tx_regiao","tx_estado", "ano"],
     columns: {
         producao_id: "Número sequencial da linha gerado por ordenação",
         tx_produto: "Tipo de combustível (Ex: ETANOL ANIDRO)",
