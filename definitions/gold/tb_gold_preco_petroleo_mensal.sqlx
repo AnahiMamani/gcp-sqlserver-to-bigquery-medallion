@@ -1,0 +1,32 @@
+config {
+    type: "incremental",
+    name: "tb_gold_preco_petroleo_mensal",
+    schema: "ds_gas_price_gold",
+    tags: ["gold", "fact"],
+    uniqueKey: ["data_mes"],
+    columns: {
+        data_mes: "Primeiro dia do mês de referência",
+        ano: "Ano do mês",
+        mes: "Mês numérico",
+        fechamento_usd: "Preço de fechamento do barril Brent (USD)",
+        abertura_usd: "Preço de abertura do mês (USD)",
+        maximo_usd: "Máxima do mês (USD)",
+        minimo_usd: "Mínima do mês (USD)",
+        var: "Variação percentual mensal do petróleo",
+        ingestao_data: "Data de ingestão do dado"
+    }
+}
+
+SELECT
+    dt_mes_dia AS data_mes,
+    CAST(ano AS INT64) AS ano,
+    CAST(mes AS INT64) AS mes,
+    CAST(vl_preco_fechamento AS NUMERIC) AS fechamento_usd,
+    CAST(vl_preco_abertura AS NUMERIC) AS abertura_usd,
+    CAST(mx_preco_usd AS NUMERIC) AS maximo_usd,
+    CAST(mn_preco_usd AS NUMERIC) AS minimo_usd,
+    CAST(pc_variacao_usd AS NUMERIC) AS var,
+    dt_ingestao AS ingestao_data
+FROM
+    `${constants.PROJECT_ID}.${constants.DATASET_SILVER}.tb_silver_preco_petroleo_mensal`
+${when(incremental(), `WHERE dt_ingestao > (SELECT MAX(ingestao_data) FROM ${self()})`)}

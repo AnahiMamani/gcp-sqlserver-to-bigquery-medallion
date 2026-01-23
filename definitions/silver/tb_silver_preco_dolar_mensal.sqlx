@@ -3,9 +3,8 @@ config {
     name: "tb_silver_preco_dolar_mensal",
     schema: "ds_gas_price_silver",
     tags: ["silver", "preco"],
-    uniqueKey: ["preco_id"],
+    uniqueKey: ["dt_mes"],
     columns: {
-        preco_id: "Chave primária (Hash) gerada a partir da coluna Data para garantir unicidade",
         dt_mes: "Data original extraída da fonte em formato string (Ex: Abr 19)",
         dt_mes_dia:"Primeiro dia do mês",
         ano: "Ano extraído e convertido para valor numérico (INT64)",
@@ -39,7 +38,6 @@ base_componentes AS (
 )
 
 SELECT
-    FARM_FINGERPRINT(Data) AS preco_id,
     Data AS dt_mes,
     CAST(ano_extraido AS INT64) AS ano,
     CAST(mes_extraido AS INT64) AS mes,
