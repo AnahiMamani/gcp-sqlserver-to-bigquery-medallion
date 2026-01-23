@@ -15,7 +15,7 @@ config {
         mx_preco_petroleo: "Máximo do petróleo",
         mn_preco_petroleo: "Mínimo do petróleo",
         vl_volume_petroleo: "Volume transacionado real",
-        dt_ingestao: "Data de ingestão"
+        dt_ingestao: "Data e hora em que o dado foi inserido no sistema"
     }
 }
 

@@ -13,7 +13,7 @@ config {
         maximo_usd: "Máxima do mês (USD)",
         minimo_usd: "Mínima do mês (USD)",
         var: "Variação percentual mensal do petróleo",
-        ingestao_data: "Data de ingestão do dado"
+        ingestao_data: "Data e hora em que o dado foi inserido no sistema"
     }
 }
 
