@@ -30,7 +30,6 @@ config {
 }
 
 SELECT
-  FARM_FINGERPRINT(CONCAT(REGIAO, ESTADO, ANO)) AS producao_id,
   SAFE_CAST(PRODUTO AS STRING) AS tx_produto,
   SAFE_CAST(UNIDADE AS STRING) AS tx_unidade,
   -- Conjunto de uniqueKey:

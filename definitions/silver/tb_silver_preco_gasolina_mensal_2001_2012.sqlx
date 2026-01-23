@@ -1,6 +1,6 @@
 config {
     type: "incremental",
-    name: "preco_gasolina_mensal_2001_2012",
+    name: "tb_silver_preco_gasolina_mensal_2001_2012",
     schema: "ds_gas_price_silver",
     tags: ["silver", "preco", "gasolina"],
     uniqueKey: ["preco_id"],
