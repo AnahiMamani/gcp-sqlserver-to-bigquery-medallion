@@ -55,6 +55,7 @@ SELECT
         WHEN tem_k THEN SAFE_CAST(vl_volume_limpo AS NUMERIC)*1000
         WHEN tem_m THEN SAFE_CAST(vl_volume_limpo AS NUMERIC)*1000000 
     END AS vl_volume_petroleo,
+    SAFE_CAST(REPLACE(REPLACE(Var, ',', '.'), '%', '') AS NUMERIC) AS pc_variacao_petroleo,
     ingestion_timestamp AS dt_ingestao
 FROM
     base_componentes
