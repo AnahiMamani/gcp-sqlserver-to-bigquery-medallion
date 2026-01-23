@@ -3,7 +3,7 @@ config {
     name: "tb_gold_preco_dolar_mensal",
     schema: "ds_gas_price_gold",
     tags: ["gold", "fact"],
-    uniqueKey: ["dt_mes_dia"],
+    uniqueKey: ["data_mes"],
     columns: {
         data_mes: "Primeiro dia do mês de referência",
         ano: "Ano do mês",
@@ -18,7 +18,7 @@ config {
 }
 
 SELECT
-    CAST(dt_mes_dia AS DATE) AS data_mes,
+    dt_mes_dia AS data_mes,
     CAST(ano AS INT64) AS ano,
     CAST(mes AS INT64) AS mes,
     CAST(vl_preco_fechamento AS NUMERIC) AS fechamento,
