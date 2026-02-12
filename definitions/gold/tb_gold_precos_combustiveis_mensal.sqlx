@@ -44,10 +44,10 @@ CTE_Filtrada AS (
 SELECT 
     FARM_FINGERPRINT(CONCAT(CAST(dt_mes AS STRING), tx_regiao, tx_produto)) AS id,
     -- ROW_NUMBER() OVER (ORDER BY dt_mes, tx_regiao, tx_produto) AS id_sequencial, opção
-    CAST(dt_mes AS DATE) AS data_mes,
+    dt_mes AS data_mes,
     CAST(ano AS INT64) AS ano,
     CAST(mes AS INT64) AS mes,
-    CASE CAST(mes AS INT64)
+    CASE mes
       WHEN 1 THEN 'Janeiro' WHEN 2 THEN 'Fevereiro' WHEN 3 THEN 'Março'
       WHEN 4 THEN 'Abril' WHEN 5 THEN 'Maio' WHEN 6 THEN 'Junho'
       WHEN 7 THEN 'Julho' WHEN 8 THEN 'Agosto' WHEN 9 THEN 'Setembro'
@@ -55,8 +55,8 @@ SELECT
     END AS mes_nome,
     tx_regiao AS regiao,
     tx_produto AS produto,
-    CAST(vl_preco_medio_revenda AS NUMERIC) AS medio_revenda,
-    CAST(ds_revenda AS NUMERIC) AS desvio_padrao_revenda,
+    vl_preco_medio_revenda AS medio_revenda,
+    ds_revenda AS desvio_padrao_revenda,
     CAST(mn_preco_revenda AS NUMERIC) AS minimo_revenda,
     CAST(mx_preco_revenda AS NUMERIC) AS maximo_revenda,
     CAST(mg_media_revenda AS NUMERIC) AS media_revenda, 

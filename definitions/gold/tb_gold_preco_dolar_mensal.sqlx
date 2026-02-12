@@ -19,8 +19,8 @@ config {
 
 SELECT
     dt_mes_dia AS data_mes,
-    CAST(ano AS INT64) AS ano,
-    CAST(mes AS INT64) AS mes,
+    ano,
+    mes AS mes,
     CAST(vl_preco_fechamento AS NUMERIC) AS fechamento,
     CAST(vl_preco_abertura AS NUMERIC) AS abertura,
     CAST(mx_preco_usd AS NUMERIC) AS maximo,
