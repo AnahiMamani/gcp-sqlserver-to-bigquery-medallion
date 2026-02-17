@@ -1,0 +1,64 @@
+config {
+    type: "incremental",
+    name: "tb_silver_preco_gasolina_mensal_2013_2019",
+    schema: "ds_gas_price_silver",
+    tags: ["silver", "preco", "gasolina"],
+    uniqueKey: ["dt_mes","tx_produto", "tx_regiao"],
+    columns: {
+        dt_mes: "Data representando o ano e o primeiro dia do mês de referência.",
+        ano: "Ano extraído da data de referência (formato YYYY).",
+        mes: "Número do mês extraído da data de referência (1-12).",
+        tx_produto: "Nome do combustível pesquisado (ex: GASOLINA COMUM).",
+        tx_regiao: "Região geográfica da pesquisa (ex: NORDESTE, SUL).",
+        qt_postos_pesquisados: "Quantidade de postos de combustíveis visitados para a coleta de dados.",
+        tx_unidade_medida: "Unidade de comercialização do produto (ex: R$/L).",
+        vl_preco_medio_revenda: "Preço médio de venda ao consumidor final.",
+        ds_revenda: "Desvio padrão dos preços praticados na revenda.",
+        mn_preco_revenda: "Valor mínimo registrado na revenda durante o mês.",
+        mx_preco_revenda: "Valor máximo registrado na revenda durante o mês.",
+        mg_media_revenda: "Margem média bruta de revenda (diferença entre preço de venda e compra).",
+        pc_coef_variacao_revenda: "Coeficiente de variação percentual dos preços de revenda.",
+        vl_preco_medio_distribuicao: "Preço médio de venda das distribuidoras para os postos.",
+        ds_distribuicao: "Desvio padrão dos preços praticados na distribuição.",
+        mn_preco_distribuicao: "Valor mínimo registrado na distribuição.",
+        mx_preco_distribuicao: "Valor máximo registrado na distribuição.",
+        pc_coef_variacao_distribuicao: "Coeficiente de variação percentual dos preços de distribuição.",
+        dt_ingestao: "Data e hora em que o dado foi inserido no sistema"
+    }
+}
+
+SELECT
+  DATE(SAFE_CAST(column2 AS TIMESTAMP)) AS dt_mes,
+  EXTRACT(YEAR FROM DATE(SAFE_CAST(column2 AS TIMESTAMP))) AS ano,
+  EXTRACT(MONTH FROM DATE(SAFE_CAST(column2 AS TIMESTAMP))) AS mes,
+
+  SAFE_CAST(column3 AS STRING) AS tx_produto,
+  SAFE_CAST(column4 AS STRING) AS tx_regiao,
+
+  SAFE_CAST(REPLACE(column5, ',', '.') AS INT64) AS qt_postos_pesquisados,
+  SAFE_CAST(UPPER(REPLACE(column6, ',', '.')) AS STRING) AS tx_unidade_medida, -- Upper mantido ate segundas opinioes
+
+  SAFE_CAST(REPLACE(column7, ',', '.') AS NUMERIC) AS vl_preco_medio_revenda,
+  SAFE_CAST(REPLACE(column8, ',', '.') AS NUMERIC) AS ds_revenda,
+  SAFE_CAST(REPLACE(column9, ',', '.') AS NUMERIC) AS mn_preco_revenda,
+  SAFE_CAST(REPLACE(column10, ',', '.') AS NUMERIC) AS mx_preco_revenda,
+  SAFE_CAST(REPLACE(column11, ',', '.') AS NUMERIC) AS mg_media_revenda,
+  SAFE_CAST(REPLACE(column12, ',', '.') AS NUMERIC) AS pc_coef_variacao_revenda,
+
+  SAFE_CAST(REPLACE(column13, ',', '.') AS NUMERIC) AS vl_preco_medio_distribuicao,
+  SAFE_CAST(REPLACE(column14, ',', '.') AS NUMERIC) AS ds_distribuicao,
+  SAFE_CAST(REPLACE(column15, ',', '.') AS NUMERIC) AS mn_preco_distribuicao,
+  SAFE_CAST(REPLACE(column16, ',', '.') AS NUMERIC) AS mx_preco_distribuicao,
+  SAFE_CAST(REPLACE(column17, ',', '.') AS NUMERIC) AS pc_coef_variacao_distribuicao,
+
+  ingestion_timestamp AS dt_ingestao
+FROM
+  `${constants.PROJECT_ID}.${constants.DATASET_BRONZE}.tb_bronze_preco_gasolina_mensal_2013_2019`
+WHERE
+-- valors ' ' do começo/fim da coluna são retirados, nullif compara, se forem ambas vazias = NULL 
+  NULLIF(TRIM(column3), '') IS NOT NULL 
+  AND UPPER(TRIM(column2)) NOT LIKE 'MÊS%'
+
+${when(incremental(), 
+    `AND ingestion_timestamp > (SELECT MAX(dt_ingestao) FROM ${self()})`
+)}

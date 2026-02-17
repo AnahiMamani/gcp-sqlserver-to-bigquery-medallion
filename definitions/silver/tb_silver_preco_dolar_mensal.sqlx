@@ -1,0 +1,58 @@
+config {
+    type: "incremental",
+    name: "tb_silver_preco_dolar_mensal",
+    schema: "ds_gas_price_silver",
+    tags: ["silver", "preco"],
+    uniqueKey: ["dt_mes"],
+    columns: {
+        dt_mes: "Data original extraída da fonte em formato string (Ex: Abr 19)",
+        dt_mes_dia:"Primeiro dia do mês",
+        ano: "Ano extraído e convertido para valor numérico (INT64)",
+        mes: "Mês extraído e convertido para valor numérico (1 a 12)",
+        vl_preco_fechamento: "Preço de fechamento do dólar no período",
+        vl_preco_abertura: "Preço de abertura do dólar no período",
+        mx_preco_usd: "Valor máximo atingido pelo dólar no período",
+        mn_preco_usd: "Valor mínimo atingido pelo dólar no período",
+        pc_variacao_usd: "Percentual de variação do preço no período",
+        dt_ingestao: "Data e hora em que o dado foi inserido no sistema"
+    }
+}
+
+WITH base_traduzida AS (
+  SELECT
+    *,
+    REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(Data, 
+      'Dez', 'Dec'), 'Out', 'Oct'), 'Set', 'Sep'), 
+      'Ago', 'Aug'), 'Mai', 'May'), 'Abr', 'Apr'), 'Fev', 'Feb') AS data_en
+  FROM
+    `${constants.PROJECT_ID}.${constants.DATASET_BRONZE}.tb_bronze_preco_dolar_mensal`
+),
+
+base_componentes AS (
+  SELECT
+    *,
+    EXTRACT(YEAR FROM SAFE.PARSE_DATE('%b %y', data_en)) AS ano_extraido,
+    EXTRACT(MONTH FROM SAFE.PARSE_DATE('%b %y', data_en)) AS mes_extraido
+  FROM
+    base_traduzida
+)
+
+SELECT
+    Data AS dt_mes,
+    CAST(ano_extraido AS INT64) AS ano,
+    CAST(mes_extraido AS INT64) AS mes,
+    DATE(CAST(ano_extraido AS INT64), CAST(mes_extraido AS INT64), 1) AS dt_mes_dia,
+
+    SAFE_CAST(REPLACE(`Último`, ',', '.') AS NUMERIC) AS vl_preco_fechamento,
+    SAFE_CAST(REPLACE(Abertura, ',', '.') AS NUMERIC) AS vl_preco_abertura,
+    SAFE_CAST(REPLACE(`Máxima`, ',', '.') AS NUMERIC) AS mx_preco_usd,
+    SAFE_CAST(REPLACE(`Mínima`, ',', '.') AS NUMERIC) AS mn_preco_usd,
+    SAFE_CAST(REPLACE(REPLACE(Var, ',', '.'), '%', '') AS NUMERIC) AS pc_variacao_usd,
+
+    ingestion_timestamp AS dt_ingestao
+FROM
+  base_componentes
+
+${when(incremental(), 
+    `WHERE ingestion_timestamp > (SELECT MAX(dt_ingestao) FROM ${self()})`
+)}
