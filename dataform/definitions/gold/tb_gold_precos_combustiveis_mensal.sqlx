@@ -1,0 +1,69 @@
+config {
+    type: "incremental",
+    name: "tb_gold_precos_combustiveis_mensal",
+    schema: "ds_gas_price_gold",
+    tags: ["gold", "preco"],
+    uniqueKey: ["id"],
+    columns: {
+        id: "Chave surrogate única gerada via Hash (FARM_FINGERPRINT)",
+        data_mes: "Primeiro dia do mês de referência (ex.: 2019-12-01)",
+        ano: "Ano do mês de referência",
+        mes: "Mês numérico (1–12)",
+        mes_nome: "Nome do mês em português (ex.: Dezembro)",
+        regiao: "Região brasileira do preço (NORTE, NORDESTE, CENTRO OESTE, SUDESTE, SUL). NULL para agregados nacionais",
+        produto: "Tipo de combustível (GASOLINA, DIESEL, etc)",
+        medio_revenda: "Preço médio de revenda ao consumidor final",
+        desvio_padrao_revenda: "Desvio padrão do preço de revenda",
+        minimo_revenda: "Preço mínimo observado na revenda",
+        maximo_revenda: "Preço máximo observado na revenda",
+        media_revenda: "Margem média de revenda (Preço Revenda - Preço Distribuição)",
+        variacao_revenda: "Coeficiente de variação do preço de revenda",
+        preco_medio: "Preço médio na distribuição",
+        postos_pesquisados: "Número de postos pesquisados pela ANP naquele mês e região",
+        fonte_periodo: "Identifica o arquivo de origem (2001-2012 ou 2013-2019)",
+        ingestao_data: "Data e hora em que o dado foi inserido no sistema"
+    }
+}
+
+WITH CTE_Union AS (
+  SELECT *, '2001-2012' AS fonte_periodo
+  FROM `${constants.PROJECT_ID}.${constants.DATASET_SILVER}.tb_silver_preco_gasolina_mensal_2001_2012`
+  
+  UNION ALL
+
+  SELECT *, '2013-2019' AS fonte_periodo
+  FROM `${constants.PROJECT_ID}.${constants.DATASET_SILVER}.tb_silver_preco_gasolina_mensal_2013_2019`
+),
+
+-- Filtrando atravez do incrementente antes de transformar tudo.
+CTE_Filtrada AS (
+  SELECT * FROM CTE_Union
+  ${when(incremental(), `WHERE dt_ingestao > (SELECT MAX(ingestao_data) FROM ${self()})`)}
+)
+
+SELECT 
+    FARM_FINGERPRINT(CONCAT(CAST(dt_mes AS STRING), tx_regiao, tx_produto)) AS id,
+    -- ROW_NUMBER() OVER (ORDER BY dt_mes, tx_regiao, tx_produto) AS id_sequencial, opção
+    dt_mes AS data_mes,
+    CAST(ano AS INT64) AS ano,
+    CAST(mes AS INT64) AS mes,
+    CASE mes
+      WHEN 1 THEN 'Janeiro' WHEN 2 THEN 'Fevereiro' WHEN 3 THEN 'Março'
+      WHEN 4 THEN 'Abril' WHEN 5 THEN 'Maio' WHEN 6 THEN 'Junho'
+      WHEN 7 THEN 'Julho' WHEN 8 THEN 'Agosto' WHEN 9 THEN 'Setembro'
+      WHEN 10 THEN 'Outubro' WHEN 11 THEN 'Novembro' WHEN 12 THEN 'Dezembro'
+    END AS mes_nome,
+    tx_regiao AS regiao,
+    tx_produto AS produto,
+    vl_preco_medio_revenda AS medio_revenda,
+    ds_revenda AS desvio_padrao_revenda,
+    CAST(mn_preco_revenda AS NUMERIC) AS minimo_revenda,
+    CAST(mx_preco_revenda AS NUMERIC) AS maximo_revenda,
+    CAST(mg_media_revenda AS NUMERIC) AS media_revenda, 
+    CAST(pc_coef_variacao_revenda AS NUMERIC) AS variacao_revenda,
+    CAST(vl_preco_medio_distribuicao AS NUMERIC) AS preco_medio,
+    CAST(qt_postos_pesquisados AS INT64) AS postos_pesquisados,
+    fonte_periodo,
+    dt_ingestao AS ingestao_data
+FROM
+    CTE_Filtrada

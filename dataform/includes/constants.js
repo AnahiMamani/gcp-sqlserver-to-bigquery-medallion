@@ -1,4 +1,4 @@
-const PROJECT_ID = "gas-price";
+const PROJECT_ID = "gas-price-482120";
   const DATASET_BRONZE = "ds_gas_price_bronze";
   const DATASET_SILVER = "ds_gas_price_silver";
   const DATASET_GOLD = "ds_gas_price_gold";

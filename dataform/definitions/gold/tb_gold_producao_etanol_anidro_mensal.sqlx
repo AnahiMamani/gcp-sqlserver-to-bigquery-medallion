@@ -1,0 +1,56 @@
+config {
+    type: "incremental",
+    name: "tb_gold_producao_etanol_anidro_mensal",
+    schema: "ds_gas_price_gold",
+    tags: ["gold", "fact"],
+    uniqueKey: ["producao_id"],
+    columns: {
+        producao_id: "Chave surrogate única",
+        ano: "Ano de referência de produção",
+        regiao: "Região brasileira",
+        estado: "Nome do estado",
+        jan: "Produção de etanol anidro em janeiro (m³ beb)",
+        fev: "Produção em fevereiro (m³ beb)",
+        mar: "Produção em março (m³ beb)",
+        abr: "Produção em abril (m³ beb)",
+        mai: "Produção em maio (m³ beb)",
+        jun: "Produção em junho (m³ beb)",
+        jul: "Produção em julho (m³ beb)",
+        ago: "Produção em agosto (m³ beb)",
+        set: "Produção em setembro (m³ beb)",
+        out: "Produção em outubro (m³ beb)",
+        nov: "Produção em novembro (m³ beb)",
+        dez: "Produção em dezembro (m³ beb)",
+        total_anual: "Soma total anual",
+        ingestao_data: "Data e hora em que o dado foi inserido no sistema"
+    }
+}
+
+WITH producao_unificada AS (
+    SELECT * FROM `${constants.PROJECT_ID}.${constants.DATASET_SILVER}.tb_silver_producao_etanol_anidro_bep_2012_2018`
+    UNION ALL
+    SELECT * FROM `${constants.PROJECT_ID}.${constants.DATASET_SILVER}.tb_silver_producao_etanol_anidro_bep_2019`
+)
+
+SELECT
+    FARM_FINGERPRINT(CONCAT(CAST(ano AS STRING), tx_regiao, tx_estado)) AS producao_id,
+    CAST(ano AS INT64) AS ano,
+    tx_regiao AS regiao,
+    tx_estado AS estado,
+    CAST(vl_producao_jan AS NUMERIC) AS jan,
+    CAST(vl_producao_fev AS NUMERIC) AS fev,
+    CAST(vl_producao_mar AS NUMERIC) AS mar,
+    CAST(vl_producao_abr AS NUMERIC) AS abr,
+    CAST(vl_producao_mai AS NUMERIC) AS mai,
+    CAST(vl_producao_jun AS NUMERIC) AS jun,
+    CAST(vl_producao_jul AS NUMERIC) AS jul,
+    CAST(vl_producao_ago AS NUMERIC) AS ago,
+    CAST(vl_producao_set AS NUMERIC) AS`set`,
+    CAST(vl_producao_out AS NUMERIC) AS `out`,
+    CAST(vl_producao_nov AS NUMERIC) AS nov,
+    CAST(vl_producao_dez AS NUMERIC) AS dez,
+    CAST(vl_producao_total_anual AS NUMERIC) AS total_anual,
+    dt_ingestao AS ingestao_data
+FROM
+    producao_unificada
+${when(incremental(), `WHERE dt_ingestao > (SELECT MAX(ingestao_data) FROM ${self()})`)}

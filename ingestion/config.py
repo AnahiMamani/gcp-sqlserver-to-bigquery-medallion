@@ -1,5 +1,7 @@
-GOOGLE_CREDENTIALS = r"C:\Users\AnahiMamani\github-repo\sqlserver-to-bigquery-medallion\gas-price-482120-4fb583586af6.json"
-PROJECT_ID = "gas-price-482120"
+import os
+
+PROJECT_ID = os.getenv("PROJECT_ID")
+GOOGLE_CREDENTIALS = os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
 
 # Mapeamento: (Banco, Tabela_SQL, Tabela_BQ, LISTA_CHAVES_NATURAIS)
 TABELAS_INGESTAO = [
