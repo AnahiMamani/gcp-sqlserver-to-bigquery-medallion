@@ -1,0 +1,18 @@
+# Ambientes Virtuais
+venv/
+.venv/
+env/
+.env
+
+# Python cache
+__pycache__/
+*.py[cod]
+
+# Dataform (Arquivos locais de credenciais)
+.df-credentials.json
+
+# IDEs
+.vscode/
+.idea/
+
+gas-price-*.json
